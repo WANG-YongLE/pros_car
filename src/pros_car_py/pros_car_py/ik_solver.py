@@ -52,7 +52,9 @@ class PybulletRobotController:
     def createWorld(self, GUI=True, view_world=False):
         # load pybullet physics engine
         if GUI:
-            physicsClient = p.connect(p.GUI)
+            #FIX: MacOS叫GUI需要使用到X11/GLX，無法worl，先改成使用Direct
+            # physicsClient = p.connect(p.GUI)
+            physicsClient = p.connect(p.DIRECT)
         else:
             physicsClient = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
