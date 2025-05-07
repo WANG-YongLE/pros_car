@@ -5,6 +5,7 @@ import rclpy
 import time
 import io
 import sys
+from rclpy.node import Node # 確保已匯入 Node
 from pros_car_py.joint_config import JOINT_UPDATES_POSITIVE, JOINT_UPDATES_NEGATIVE
 from pros_car_py.car_controller import CarController
 from pros_car_py.arm_controller import ArmController
@@ -32,12 +33,21 @@ def init_ros_node():
 """
 def main():
     ros_communicator, ros_thread = init_ros_node()#這行程式碼的作用是呼叫 init_ros_node() 函式，並將它回傳的兩個值分別指定給變數 ros_communicator 和 ros_thread
+
+    # --- 開始修改: ROS 參數處理 ---
+    # 宣告 'gui' 參數，預設值為 True
+    ros_communicator.declare_parameter('gui', True)
+    # 讀取 'gui' 參數的值
+    use_gui = ros_communicator.get_parameter('gui').get_parameter_value().bool_value
+    ros_communicator.get_logger().info(f'PyBullet GUI Parameter (gui): {use_gui}')
+    # --- 結束修改: ROS 參數處理 ---
+
     data_processor = DataProcessor(ros_communicator)
     nav2_processing = Nav2Processing(ros_communicator, data_processor)
     ik_solver = PybulletRobotController(end_eff_index=5)
     car_controller = CarController(ros_communicator, nav2_processing)
     arm_controller = ArmController(
-        ros_communicator, data_processor, ik_solver, num_joints=5
+        ros_communicator, data_processor, ik_solver, num_joints=5, use_gui=use_gui
     )
     crane_controller = CraneController(
         ros_communicator, data_processor, ik_solver, num_joints=7

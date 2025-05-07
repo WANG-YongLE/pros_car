@@ -12,10 +12,10 @@ import threading
 
 
 class ArmController:
-    def __init__(self, ros_communicator, data_processor, ik_solver, num_joints=4):
+    def __init__(self, ros_communicator, data_processor, ik_solver, num_joints=4, use_gui=True):
         # initail pybullet
         self.ik_solver = ik_solver
-        self.ik_solver.createWorld(GUI=True)
+        self.ik_solver.createWorld(GUI=use_gui)
 
         self.ros_communicator = ros_communicator
         self.data_processor = data_processor
@@ -91,8 +91,6 @@ class ArmController:
     # except:
     #     pass
     #     # self.ik_solver.setJointPosition(joint_angles)
-
-    #     self.update_action(self.joint_pos)
 
     # auto control--------------------------------------------------
     def auto_control(self, key=None, mode="auto_arm_control"):
