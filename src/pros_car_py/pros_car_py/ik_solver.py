@@ -52,7 +52,7 @@ class PybulletRobotController:
     def createWorld(self, GUI=True, view_world=False):
         # load pybullet physics engine
         if GUI:
-            hysicsClient = p.connect(p.GUI)
+            physicsClient = p.connect(p.GUI)
         else:
             physicsClient = p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())

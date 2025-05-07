@@ -1,3 +1,36 @@
+# 2025/5/7更新
+在 Docker 環境中執行時，`p.connect(p.GUI)` 會因無法連接到 X Server 而失敗 (錯誤訊息: "cannot connect to X server")。 此修改將 GUI 模式下的連線方式改為 `p.connect(p.DIRECT)`，以確保可以正常啟動和運行。
+
+完整errors:
+```
+ ⚡ root@6380aa841108  ~  ros2 run pros_car_py robot_control
+pybullet build time: Aug  9 2024 12:32:26
+startThreads creating 1 threads.
+starting thread 0
+started thread 0
+argc=2
+argv[0] = --unused
+argv[1] = --start_demo_name=Physics Server
+ExampleBrowserThreadFunc started
+X11 functions dynamically loaded using dlopen/dlsym OK!
+    cannot connect to X server
+[ros2run]: Process exited with failure 1
+ ✘⚡ root@6380aa841108  ~ 
+```
+附註：此問題在「特定用戶」 MacOS 環境(M Series)下，但不確定是否為所有 MacOS 環境的普遍問題。Docker 環境下的 X Server 連接失敗是明確的觸發原因。
+
+為 `robot_control` 節點（main2.py）增加 `--ros-args -p gui:=<bool>` 參數功能，以控制 PyBullet 模擬環境是否顯示 GUI。
+
+主要修改：
+- 在 `main2.py` 中增加 `gui` ROS 參數的宣告與讀取邏輯，預設值為 `True`。
+- 修改 `ArmController` 的 `__init__` 方法，增加 `use_gui` 參數，並將其傳遞給 `ik_solver.createWorld` 方法。
+- 將從 ROS 參數讀取的 `use_gui` 值從 `main2.py` 傳遞給 `ArmController` 實例。
+
+如此一來，使用者可以透過以下指令啟動節點：
+- `ros2 run pros_car_py robot_control` (啟用 GUI，預設)
+- `ros2 run pros_car_py robot_control --ros-args -p gui:=true` (明確啟用 GUI)
+- `ros2 run pros_car_py robot_control --ros-args -p gui:=false` (停用 GUI)
+
 # pros_car 使用說明
 ## class diagram
 ![pros_car](https://github.com/alianlbj23/pros_car/blob/main/img/pros_car.drawio.png?raw=true)

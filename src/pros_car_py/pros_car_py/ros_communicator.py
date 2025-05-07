@@ -1,97 +1,160 @@
+# 導入ROS2節點基礎類
 from rclpy.node import Node
+
+# 導入自定義的車輛控制相關類
 from pros_car_py.car_models import DeviceDataTypeEnum, CarCControl
+
+# 導入幾何消息類型
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Point
+
+# 導入標準消息類型
 from std_msgs.msg import String, Header
+
+# 導入導航相關消息類型
 from nav_msgs.msg import Path
+
+# 導入傳感器消息類型
 from sensor_msgs.msg import LaserScan, Imu
+
+# 導入軌跡消息類型
 from trajectory_msgs.msg import JointTrajectoryPoint
+
+# 導入JSON處理庫
 import orjson
+
+# 導入動作映射配置
 from pros_car_py.ros_communicator_config import ACTION_MAPPINGS
+
+# 導入點消息類型
 from geometry_msgs.msg import PointStamped
+
+# 導入布爾和字符串消息類型
 from std_msgs.msg import String, Bool
+
+# 導入浮點數組消息類型
 from std_msgs.msg import Float32MultiArray
+
+# 導入可視化標記消息類型
 from visualization_msgs.msg import Marker
+
+# 導入清除代價地圖服務
 from nav2_msgs.srv import ClearEntireCostmap
+
+# 導入動作客戶端
 from rclpy.action import ActionClient
+
+# 導入導航動作
 from nav2_msgs.action import NavigateToPose
+
+# 導入ROS2 Python客戶端庫
 import rclpy
 
 
 class RosCommunicator(Node):
     def __init__(self):
+        # 初始化ROS節點
         super().__init__("RosCommunicator")
 
-        # subscribeamcl_pose
-        self.latest_amcl_pose = None
+        # 訂閱AMCL定位數據
+        self.latest_amcl_pose = None  # 存儲最新的AMCL位姿數據
         self.subscriber_amcl = self.create_subscription(
-            PoseWithCovarianceStamped, "/amcl_pose", self.subscriber_amcl_callback, 10
+            PoseWithCovarianceStamped,  # 消息類型：帶協方差的位姿
+            "/amcl_pose",  # 話題名稱
+            self.subscriber_amcl_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        # subscribe goal_pose
-        self.target_pose = None
+        # 訂閱目標位姿
+        self.target_pose = None  # 存儲目標位姿
         self.subscriber_goal = self.create_subscription(
-            PoseStamped, "/goal_pose", self.subscriber_goal_callback, 1
+            PoseStamped,  # 消息類型：位姿
+            "/goal_pose",  # 話題名稱
+            self.subscriber_goal_callback,  # 回調函數
+            1  # 隊列大小
         )
 
-        # subscribe lidar
-        self.latest_lidar = None
+        # 訂閱雷達數據
+        self.latest_lidar = None  # 存儲最新的雷達數據
         self.subscriber_lidar = self.create_subscription(
-            LaserScan, "/scan", self.subscriber_lidar_callback, 1
+            LaserScan,  # 消息類型：雷達掃描
+            "/scan",  # 話題名稱
+            self.subscriber_lidar_callback,  # 回調函數
+            1  # 隊列大小
         )
 
-        # subscribe global_plan
-        self.latest_received_global_plan = None
+        # 訂閱全局路徑規劃
+        self.latest_received_global_plan = None  # 存儲最新的全局路徑
         self.subscriber_received_global_plan = self.create_subscription(
-            Path, "/received_global_plan", self.received_global_plan_callback, 1
+            Path,  # 消息類型：路徑
+            "/received_global_plan",  # 話題名稱
+            self.received_global_plan_callback,  # 回調函數
+            1  # 隊列大小
         )
 
-        # Subscribe to YOLO detected object coordinates
-        self.latest_yolo_coordinates = None
+        # 訂閱YOLO目標檢測位置
+        self.latest_yolo_coordinates = None  # 存儲YOLO檢測到的目標位置
         self.subscriber_yolo_detection_position = self.create_subscription(
-            PointStamped,
-            "/yolo/detection/position",
-            self.yolo_detection_position_callback,
-            10,
+            PointStamped,  # 消息類型：帶時間戳的點
+            "/yolo/detection/position",  # 話題名稱
+            self.yolo_detection_position_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        # Subscribe to YOLO detected object coordinates
-        self.latest_yolo_offset = None
+        # 訂閱YOLO目標偏移量
+        self.latest_yolo_offset = None  # 存儲YOLO檢測的目標偏移量
         self.subscriber_yolo_offset = self.create_subscription(
-            PointStamped,
-            "/yolo/detection/offset",
-            self.yolo_detection_offset_callback,
-            10,
+            PointStamped,  # 消息類型：帶時間戳的點
+            "/yolo/detection/offset",  # 話題名稱
+            self.yolo_detection_offset_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        self.latest_yolo_detection_status = None
+        # 訂閱YOLO檢測狀態
+        self.latest_yolo_detection_status = None  # 存儲YOLO檢測狀態
         self.subscriber_yolo_detection_status = self.create_subscription(
-            Bool, "/yolo/detection/status", self.yolo_detection_status_callback, 10
+            Bool,  # 消息類型：布爾值
+            "/yolo/detection/status",  # 話題名稱
+            self.yolo_detection_status_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        self.latest_imu_data = None
+        # 訂閱IMU數據
+        self.latest_imu_data = None  # 存儲最新的IMU數據
         self.imu_sub = self.create_subscription(
-            Imu, "/imu/data", self.imu_data_callback, 10
+            Imu,  # 消息類型：IMU數據
+            "/imu/data",  # 話題名稱
+            self.imu_data_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        self.latest_mediapipe_data = None
+        # 訂閱MediaPipe數據
+        self.latest_mediapipe_data = None  # 存儲最新的MediaPipe數據
         self.mediapipe_sub = self.create_subscription(
-            Point, "/mediapipe_data", self.mediapipe_data_callback, 10
+            Point,  # 消息類型：點
+            "/mediapipe_data",  # 話題名稱
+            self.mediapipe_data_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        self.latest_yolo_target_info = None
+        # 訂閱YOLO目標信息
+        self.latest_yolo_target_info = None  # 存儲YOLO目標信息
         self.yolo_target_info_sub = self.create_subscription(
-            Float32MultiArray, "/yolo/target_info", self.yolo_target_info_callback, 10
+            Float32MultiArray,  # 消息類型：浮點數組
+            "/yolo/target_info",  # 話題名稱
+            self.yolo_target_info_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        self.latest_camera_x_multi_depth = None
+        # 訂閱相機深度數據
+        self.latest_camera_x_multi_depth = None  # 存儲最新的相機深度數據
         self.camera_x_multi_depth_sub = self.create_subscription(
-            Float32MultiArray,
-            "/camera/x_multi_depth_values",
-            self.camera_x_multi_depth_callback,
-            10,
+            Float32MultiArray,  # 消息類型：浮點數組
+            "/camera/x_multi_depth_values",  # 話題名稱
+            self.camera_x_multi_depth_callback,  # 回調函數
+            10  # 隊列大小
         )
 
-        # publish car_C_rear_wheel and car_C_front_wheel
+        # 發布車輛後輪和前輪控制命令
         self.publisher_rear = self.create_publisher(
             Float32MultiArray, DeviceDataTypeEnum.car_C_rear_wheel, 10
         )
@@ -99,31 +162,36 @@ class RosCommunicator(Node):
             Float32MultiArray, DeviceDataTypeEnum.car_C_front_wheel, 10
         )
 
-        # publish goal_pose
+        # 發布目標位姿
         self.publisher_goal_pose = self.create_publisher(PoseStamped, "/goal_pose", 10)
 
-        # publish robot arm angle
+        # 發布機械臂關節角度
         self.publisher_joint_trajectory = self.create_publisher(
             JointTrajectoryPoint, DeviceDataTypeEnum.robot_arm, 10
         )
 
+        # 發布座標信息
         self.publisher_coordinates = self.create_publisher(
             PointStamped, "/coordinates", 10
         )
 
+        # 發布目標標籤
         self.publisher_target_label = self.create_publisher(String, "/target_label", 10)
 
+        # 發布起重機狀態
         self.crane_state_publisher = self.create_publisher(String, "crane_state", 10)
 
+        # 發布確認的初始路徑
         self.publisher_confirmed_path = self.create_publisher(
             Path, "/confirmed_initial_plan", 10
         )
 
+        # 發布目標標記
         self.publisher_target_marker = self.create_publisher(
             Marker, "/selected_target_marker", 10
         )
 
-        # 創清除 costmap Service
+        # 創建清除代價地圖服務客戶端
         self.clear_global_costmap_client = self.create_client(
             ClearEntireCostmap, "/global_costmap/clear"
         )
@@ -131,18 +199,13 @@ class RosCommunicator(Node):
             ClearEntireCostmap, "/local_costmap/clear"
         )
 
+        # 發布接收到的全局路徑和規劃路徑
         self.publisher_received_global_plan = self.create_publisher(
             Path, "/received_global_plan", 10
         )
         self.publisher_plan = self.create_publisher(Path, "/plan", 10)
 
-        self.clear_global_costmap_client = self.create_client(
-            ClearEntireCostmap, "/global_costmap/clear"
-        )
-        self.clear_local_costmap_client = self.create_client(
-            ClearEntireCostmap, "/local_costmap/clear"
-        )
-
+        # 創建導航動作客戶端
         self.navigate_to_pose_action_client = ActionClient(
             self, NavigateToPose, "/navigate_to_pose"
         )
@@ -240,6 +303,11 @@ class RosCommunicator(Node):
 
     # publish robot arm angle
     def publish_robot_arm_angle(self, angle):
+        """發布機械臂角度控制命令
+        
+        Args:
+            angle (list): 機械臂各關節的目標角度列表
+        """
         joint_trajectory_point = JointTrajectoryPoint()
         joint_trajectory_point.positions = angle
         joint_trajectory_point.velocities = [0.0] * len(angle)
